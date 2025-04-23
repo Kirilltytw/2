@@ -1,19 +1,20 @@
-// ========== КОНФИГУРАЦИЯ ==========
-const CONFIG = {
-    peer: {
-        host: '0.peerjs.com',
-        port: 443,
-        secure: true,
-        debug: 3,
-        config: {
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' }
-            ]
-        }
-    }
+// ========== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ==========
+const DOM = {
+    connectionStatus: null,
+    statusIcon: null,
+    statusText: null,
+    videoFrame: null,
+    videoUrl: null,
+    loadBtn: null,
+    playBtn: null,
+    pauseBtn: null,
+    chatMessages: null,
+    chatInput: null,
+    sendBtn: null,
+    roomUrl: null,
+    copyBtn: null
 };
 
-// ========== СОСТОЯНИЕ ПРИЛОЖЕНИЯ ==========
 const state = {
     peer: null,
     conn: null,
@@ -22,58 +23,53 @@ const state = {
     currentVideo: null
 };
 
-// ========== ИНИЦИАЛИЗАЦИЯ ==========
+// ========== ОСНОВНАЯ ИНИЦИАЛИЗАЦИЯ ==========
 document.addEventListener('DOMContentLoaded', () => {
+    initDOMReferences();
     setupEventListeners();
     initPeerConnection();
 });
 
+function initDOMReferences() {
+    DOM.connectionStatus = document.getElementById('connection-status');
+    DOM.statusIcon = document.getElementById('status-icon');
+    DOM.statusText = document.getElementById('status-text');
+    DOM.videoFrame = document.getElementById('video-frame');
+    DOM.videoUrl = document.getElementById('video-url');
+    DOM.loadBtn = document.getElementById('load-btn');
+    DOM.playBtn = document.getElementById('play-btn');
+    DOM.pauseBtn = document.getElementById('pause-btn');
+    DOM.chatMessages = document.getElementById('chat-messages');
+    DOM.chatInput = document.getElementById('chat-input');
+    DOM.sendBtn = document.getElementById('send-btn');
+    DOM.roomUrl = document.getElementById('room-url');
+    DOM.copyBtn = document.getElementById('copy-btn');
+}
+
 // ========== ОБРАБОТЧИКИ СОБЫТИЙ ==========
 function setupEventListeners() {
-    // Копирование ссылки комнаты
-    document.getElementById('copy-btn').addEventListener('click', () => {
-        const input = document.getElementById('room-url');
-        input.select();
-        document.execCommand('copy');
-        alert('Ссылка скопирована!');
-    });
-    
-    // Загрузка видео
-    document.getElementById('load-btn').addEventListener('click', () => {
-        const url = document.getElementById('video-url').value.trim();
-        if (url && state.conn) {
-            loadVideo(url);
-            state.conn.send({ type: 'video', url: url });
-        }
-    });
-    
-    // Управление видео
-    document.getElementById('play-btn').addEventListener('click', () => {
-        if (state.conn) {
-            playVideo();
-            state.conn.send({ type: 'play' });
-        }
-    });
-    
-    document.getElementById('pause-btn').addEventListener('click', () => {
-        if (state.conn) {
-            pauseVideo();
-            state.conn.send({ type: 'pause' });
-        }
-    });
-    
-    // Чат
-    document.getElementById('send-btn').addEventListener('click', sendMessage);
-    document.getElementById('chat-input').addEventListener('keypress', (e) => {
+    DOM.copyBtn.addEventListener('click', copyRoomLink);
+    DOM.loadBtn.addEventListener('click', handleLoadVideo);
+    DOM.playBtn.addEventListener('click', handlePlay);
+    DOM.pauseBtn.addEventListener('click', handlePause);
+    DOM.sendBtn.addEventListener('click', sendMessage);
+    DOM.chatInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') sendMessage();
     });
 }
 
-// ========== РАБОТА С PEERJS ==========
+// ========== PEERJS СОЕДИНЕНИЕ ==========
 function initPeerConnection() {
     updateStatus('Подключение к P2P-сети...', 'disconnected');
     
-    state.peer = new Peer(CONFIG.peer);
+    state.peer = new Peer({
+        host: '0.peerjs.com',
+        port: 443,
+        secure: true,
+        config: {
+            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+        }
+    });
 
     state.peer.on('open', (id) => {
         if (state.isHost) {
@@ -107,10 +103,38 @@ function setupConnection(conn) {
 }
 
 // ========== ОСНОВНЫЕ ФУНКЦИИ ==========
-function loadVideo(url) {
-    if (!url) return;
+function updateStatus(message, status) {
+    if (!DOM.connectionStatus || !DOM.statusIcon || !DOM.statusText) return;
     
+    DOM.connectionStatus.className = `status-${status}`;
+    DOM.statusText.textContent = message;
+    DOM.statusIcon.textContent = status === 'connected' ? '🟢' : '🔴';
+}
+
+function updateRoomLink() {
+    if (DOM.roomUrl) {
+        DOM.roomUrl.value = window.location.href;
+    }
+}
+
+function enableControls() {
+    [DOM.playBtn, DOM.pauseBtn, DOM.sendBtn, DOM.chatInput].forEach(el => {
+        if (el) el.disabled = false;
+    });
+}
+
+// ========== ФУНКЦИИ ВИДЕО ==========
+function handleLoadVideo() {
+    const url = DOM.videoUrl.value.trim();
+    if (url && state.conn) {
+        loadVideo(url);
+        state.conn.send({ type: 'video', url });
+    }
+}
+
+function loadVideo(url) {
     let embedUrl = '';
+    
     if (url.includes('vk.com')) {
         const videoId = url.match(/video(-?\d+_\d+)/)[1];
         embedUrl = `https://vk.com/video_ext.php?oid=${videoId.split('_')[0]}&id=${videoId.split('_')[1]}`;
@@ -119,82 +143,69 @@ function loadVideo(url) {
         embedUrl = `https://rutube.ru/play/embed/${videoId}`;
     }
     
-    if (embedUrl) {
-        document.getElementById('video-frame').src = embedUrl;
+    if (embedUrl && DOM.videoFrame) {
+        DOM.videoFrame.src = embedUrl;
         state.currentVideo = url;
         updateStatus('Видео загружено', 'connected');
     }
 }
 
-function playVideo() {
-    const iframe = document.getElementById('video-frame');
-    iframe.contentWindow.postMessage('play', '*');
+function handlePlay() {
+    if (state.conn && DOM.videoFrame) {
+        DOM.videoFrame.contentWindow.postMessage('play', '*');
+        state.conn.send({ type: 'play' });
+    }
 }
 
-function pauseVideo() {
-    const iframe = document.getElementById('video-frame');
-    iframe.contentWindow.postMessage('pause', '*');
+function handlePause() {
+    if (state.conn && DOM.videoFrame) {
+        DOM.videoFrame.contentWindow.postMessage('pause', '*');
+        state.conn.send({ type: 'pause' });
+    }
 }
 
-// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
-function updateStatus(message, status) {
-    const element = document.getElementById('connection-status');
-    element.textContent = message;
-    element.className = `status-${status}`;
-    document.getElementById('status-icon').textContent = status === 'connected' ? '🟢' : '🔴';
-}
-
-function generateRoomId() {
-    return Math.random().toString(36).substring(2, 8);
-}
-
-function updateRoomLink() {
-    document.getElementById('room-url').value = window.location.href;
-}
-
-function enableControls() {
-    document.querySelectorAll('button:disabled').forEach(btn => {
-        btn.disabled = false;
-    });
-    document.getElementById('chat-input').disabled = false;
-}
-
+// ========== ФУНКЦИИ ЧАТА ==========
 function sendMessage() {
-    const input = document.getElementById('chat-input');
-    const text = input.value.trim();
+    const text = DOM.chatInput.value.trim();
     if (text && state.conn) {
         state.conn.send({ 
             type: 'chat', 
             sender: state.isHost ? 'Хост' : 'Участник', 
-            text: text 
+            text 
         });
         addMessage('Вы', text);
-        input.value = '';
+        DOM.chatInput.value = '';
     }
 }
 
 function addMessage(sender, text) {
-    const chat = document.getElementById('chat-messages');
+    if (!DOM.chatMessages) return;
+    
     const message = document.createElement('div');
     message.innerHTML = `<strong>${sender}:</strong> ${text}`;
-    chat.appendChild(message);
-    chat.scrollTop = chat.scrollHeight;
+    DOM.chatMessages.appendChild(message);
+    DOM.chatMessages.scrollTop = DOM.chatMessages.scrollHeight;
+}
+
+// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+function generateRoomId() {
+    return Math.random().toString(36).substring(2, 8);
+}
+
+function copyRoomLink() {
+    if (DOM.roomUrl) {
+        DOM.roomUrl.select();
+        document.execCommand('copy');
+        alert('Ссылка скопирована!');
+    }
 }
 
 function handleData(data) {
     switch(data.type) {
-        case 'video':
-            loadVideo(data.url);
-            break;
-        case 'play':
-            playVideo();
-            break;
-        case 'pause':
-            pauseVideo();
-            break;
-        case 'chat':
-            addMessage(data.sender, data.text);
-            break;
+        case 'video': loadVideo(data.url); break;
+        case 'play': handlePlay(); break;
+        case 'pause': handlePause(); break;
+        case 'chat': addMessage(data.sender, data.text); break;
     }
 }
 
