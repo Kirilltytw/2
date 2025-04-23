@@ -1,5 +1,6 @@
+/* Основные стили */
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Arial', sans-serif;
     margin: 0;
     padding: 20px;
     background: #f5f5f5;
@@ -15,6 +16,7 @@ body {
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
+/* Статус подключения */
 #connection-status {
     padding: 10px;
     border-radius: 4px;
@@ -24,12 +26,12 @@ body {
     gap: 10px;
 }
 
-#connection-status.connected {
+.status-connected {
     background: #e8f5e9;
     color: #2ecc71;
 }
 
-#connection-status.disconnected {
+.status-disconnected {
     background: #ffebee;
     color: #e74c3c;
 }
@@ -38,6 +40,7 @@ body {
     font-size: 1.2em;
 }
 
+/* Видеоплеер */
 #video-frame {
     width: 100%;
     height: 450px;
@@ -47,6 +50,7 @@ body {
     border-radius: 4px;
 }
 
+/* Элементы управления */
 .controls {
     display: flex;
     gap: 10px;
@@ -77,6 +81,7 @@ button:disabled {
     cursor: not-allowed;
 }
 
+/* Чат */
 #chat-messages {
     height: 200px;
     overflow-y: auto;
@@ -93,7 +98,8 @@ button:disabled {
     margin-bottom: 20px;
 }
 
-#invite-link {
+/* Приглашение */
+.invite-section {
     background: #f8f9fa;
     padding: 15px;
     border-radius: 4px;
@@ -107,6 +113,7 @@ button:disabled {
     background: white;
 }
 
+/* Адаптивность */
 @media (max-width: 600px) {
     .controls {
         flex-direction: column;
