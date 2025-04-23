@@ -7,12 +7,7 @@ const CONFIG = {
         debug: 3,
         config: {
             iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { 
-                    urls: 'turn:numb.viagenie.ca',
-                    username: 'your-email@example.com',
-                    credential: 'your-password'
-                }
+                { urls: 'stun:stun.l.google.com:19302' }
             ]
         }
     }
@@ -28,12 +23,50 @@ const state = {
 };
 
 // ========== ИНИЦИАЛИЗАЦИЯ ==========
-document.addEventListener('DOMContentLoaded', initApp);
-
-function initApp() {
-    initElements();
+document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     initPeerConnection();
+});
+
+// ========== ОБРАБОТЧИКИ СОБЫТИЙ ==========
+function setupEventListeners() {
+    // Копирование ссылки комнаты
+    document.getElementById('copy-btn').addEventListener('click', () => {
+        const input = document.getElementById('room-url');
+        input.select();
+        document.execCommand('copy');
+        alert('Ссылка скопирована!');
+    });
+    
+    // Загрузка видео
+    document.getElementById('load-btn').addEventListener('click', () => {
+        const url = document.getElementById('video-url').value.trim();
+        if (url && state.conn) {
+            loadVideo(url);
+            state.conn.send({ type: 'video', url: url });
+        }
+    });
+    
+    // Управление видео
+    document.getElementById('play-btn').addEventListener('click', () => {
+        if (state.conn) {
+            playVideo();
+            state.conn.send({ type: 'play' });
+        }
+    });
+    
+    document.getElementById('pause-btn').addEventListener('click', () => {
+        if (state.conn) {
+            pauseVideo();
+            state.conn.send({ type: 'pause' });
+        }
+    });
+    
+    // Чат
+    document.getElementById('send-btn').addEventListener('click', sendMessage);
+    document.getElementById('chat-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage();
+    });
 }
 
 // ========== РАБОТА С PEERJS ==========
@@ -71,35 +104,6 @@ function setupConnection(conn) {
     conn.on('data', handleData);
     conn.on('close', () => updateStatus('Соединение разорвано', 'disconnected'));
     conn.on('error', handleConnectionError);
-}
-
-// ========== ОБРАБОТЧИКИ СОБЫТИЙ ==========
-function handleData(data) {
-    switch(data.type) {
-        case 'video':
-            loadVideo(data.url);
-            break;
-        case 'play':
-            playVideo();
-            break;
-        case 'pause':
-            pauseVideo();
-            break;
-        case 'chat':
-            addMessage(data.sender, data.text);
-            break;
-    }
-}
-
-function handlePeerError(err) {
-    console.error('PeerJS Error:', err);
-    updateStatus(`Ошибка: ${err.type}`, 'disconnected');
-    setTimeout(initPeerConnection, 3000);
-}
-
-function handleConnectionError(err) {
-    console.error('Connection Error:', err);
-    updateStatus('Ошибка соединения', 'disconnected');
 }
 
 // ========== ОСНОВНЫЕ ФУНКЦИИ ==========
@@ -155,47 +159,6 @@ function enableControls() {
     document.getElementById('chat-input').disabled = false;
 }
 
-// ========== ИНИЦИАЛИЗАЦИЯ DOM ==========
-function initElements() {
-    // Копирование ссылки комнаты
-    document.getElementById('copy-btn').addEventListener('click', () => {
-        const input = document.getElementById('room-url');
-        input.select();
-        document.execCommand('copy');
-        alert('Ссылка скопирована!');
-    });
-    
-    // Загрузка видео
-    document.getElementById('load-btn').addEventListener('click', () => {
-        const url = document.getElementById('video-url').value.trim();
-        if (url && state.conn) {
-            loadVideo(url);
-            state.conn.send({ type: 'video', url: url });
-        }
-    });
-    
-    // Управление видео
-    document.getElementById('play-btn').addEventListener('click', () => {
-        if (state.conn) {
-            playVideo();
-            state.conn.send({ type: 'play' });
-        }
-    });
-    
-    document.getElementById('pause-btn').addEventListener('click', () => {
-        if (state.conn) {
-            pauseVideo();
-            state.conn.send({ type: 'pause' });
-        }
-    });
-    
-    // Чат
-    document.getElementById('send-btn').addEventListener('click', sendMessage);
-    document.getElementById('chat-input').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') sendMessage();
-    });
-}
-
 function sendMessage() {
     const input = document.getElementById('chat-input');
     const text = input.value.trim();
@@ -216,4 +179,32 @@ function addMessage(sender, text) {
     message.innerHTML = `<strong>${sender}:</strong> ${text}`;
     chat.appendChild(message);
     chat.scrollTop = chat.scrollHeight;
+}
+
+function handleData(data) {
+    switch(data.type) {
+        case 'video':
+            loadVideo(data.url);
+            break;
+        case 'play':
+            playVideo();
+            break;
+        case 'pause':
+            pauseVideo();
+            break;
+        case 'chat':
+            addMessage(data.sender, data.text);
+            break;
+    }
+}
+
+function handlePeerError(err) {
+    console.error('PeerJS Error:', err);
+    updateStatus(`Ошибка: ${err.type}`, 'disconnected');
+    setTimeout(initPeerConnection, 3000);
+}
+
+function handleConnectionError(err) {
+    console.error('Connection Error:', err);
+    updateStatus('Ошибка соединения', 'disconnected');
 }
