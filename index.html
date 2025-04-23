@@ -10,31 +10,29 @@
     <div class="container">
         <h1>Совместный просмотр</h1>
         
-        <!-- Блок статуса -->
         <div id="connection-status" class="status-disconnected">
             <span id="status-icon">🔴</span>
             <span id="status-text">Подключение...</span>
         </div>
         
-        <!-- Видеоплеер -->
         <iframe id="video-frame" allowfullscreen></iframe>
         
-        <!-- Управление -->
         <div class="controls">
             <input type="text" id="video-url" placeholder="Ссылка на видео (VK/Rutube)">
             <button id="load-btn">Загрузить</button>
             <button id="play-btn" disabled>▶️ Воспроизвести</button>
             <button id="pause-btn" disabled>⏸️ Пауза</button>
+            <button id="sync-btn" disabled>🔁 Синхронизировать</button>
         </div>
         
-        <!-- Чат -->
+        <div id="video-status">Видео не загружено</div>
+        
         <div id="chat-messages"></div>
         <div class="chat-controls">
             <input type="text" id="chat-input" placeholder="Ваше сообщение" disabled>
             <button id="send-btn" disabled>Отправить</button>
         </div>
         
-        <!-- Ссылка для приглашения -->
         <div class="invite-section">
             <p>Пригласите друзей:</p>
             <input type="text" id="room-url" readonly>
@@ -42,8 +40,20 @@
         </div>
     </div>
 
-    <!-- Подключение PeerJS -->
     <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="assets/js/script.js"></script>
+    
+    <script>
+    // Обработчик сообщений от iframe
+    window.addEventListener('message', function(event) {
+        try {
+            if (typeof event.data === 'object' && event.data.currentTime !== undefined) {
+                window.videoCurrentTime = event.data.currentTime;
+            }
+        } catch (e) {
+            console.log('Message error:', e);
+        }
+    });
+    </script>
 </body>
 </html>
