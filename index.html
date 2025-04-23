@@ -10,8 +10,8 @@
     <div class="container">
         <h1>Совместный просмотр</h1>
         
-        <!-- Блок статуса подключения -->
-        <div id="connection-status" class="disconnected">
+        <!-- Блок статуса -->
+        <div id="connection-status" class="status-disconnected">
             <span id="status-icon">🔴</span>
             <span id="status-text">Подключение...</span>
         </div>
@@ -35,14 +35,14 @@
         </div>
         
         <!-- Ссылка для приглашения -->
-        <div id="invite-link">
-            <p>Отправьте эту ссылку другу:</p>
+        <div class="invite-section">
+            <p>Пригласите друзей:</p>
             <input type="text" id="room-url" readonly>
             <button id="copy-btn">Копировать</button>
         </div>
     </div>
 
-    <!-- Подключение PeerJS через надежный CDN -->
+    <!-- Подключение PeerJS -->
     <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="assets/js/script.js"></script>
 </body>
